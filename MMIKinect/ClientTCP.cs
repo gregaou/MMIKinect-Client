@@ -52,7 +52,7 @@ namespace MMIKinect {
 					data[4] = 2;
 					data[5] = 65;
 					data[6] = 66;
-					ClientPaquet cp = new ClientPaquet(getSocket());
+					Packet cp = new Packet(getSocket());
 					getSocket().Write(data,0,7);
 					string s = cp.getMessage();
 					System.Console.WriteLine("Message : " + s);
