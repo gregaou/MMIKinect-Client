@@ -76,7 +76,7 @@ namespace MMIKinect {
 		/// </summary>
 		/// <param name="type">byte type défini le type du paquet</param>
 		/// <returns>L'objet Paquet courant</returns>
-		Packet setType( byte type ) {
+		public Packet setType( byte type ) {
 			_type = type;
 			return this;
 		}
@@ -86,7 +86,7 @@ namespace MMIKinect {
 		/// </summary>
 		/// <param name="size">Taille des données du paquet</param>
 		/// <returns>L'objet Paquet courant</returns>
-		Packet setBodySize( uint size ) {
+		public Packet setBodySize( uint size ) {
 			_bodySize = size;
 			return this;
 		}
@@ -96,7 +96,7 @@ namespace MMIKinect {
 		/// </summary>
 		/// <param name="data">Les données du paquet</param>
 		/// <returns>L'objet Paquet courant</returns>
-		Packet setData( byte[] data ) {
+		public Packet setData( byte[] data ) {
 			_data = data;
 			setBodySize((uint)_data.Length);
 			return this;
@@ -144,6 +144,16 @@ namespace MMIKinect {
 				n += r;
 			}
 			return this;	
+		}
+
+		public Packet doSend() {
+			byte[] sendMessage = new byte[_headerSize + getBodySize()];
+			sendMessage[0] = getType();
+			byte[] bodySize = BitConverter.GetBytes(getBodySize());
+			bodySize.CopyTo(sendMessage,1);
+			getData().CopyTo(sendMessage,_headerSize);
+			_stream.Write(sendMessage, 0, sendMessage.Length);
+			return this;
 		}
 
 		/// <summary>

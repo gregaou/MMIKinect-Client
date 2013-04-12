@@ -27,9 +27,8 @@ namespace MMIKinect {
 			try {
 				Connect("127.0.0.1", 1337);
 			} catch(Exception e) {
-				Console.WriteLine(e.Message);
+				Console.WriteLine("Erreur de connexion" + e.Message);
 			}
-			Console.WriteLine("connecté");
 			return this;
 		}
 
@@ -44,16 +43,13 @@ namespace MMIKinect {
 		private void readSocket() {
 			while(Thread.CurrentThread.IsAlive) {
 				try {
-					byte[] data = new byte[7];
-					data[0] = 1;
-					data[1] = 0;
-					data[2] = 0;
-					data[3] = 0;
-					data[4] = 2;
-					data[5] = 65;
-					data[6] = 66;
+					byte[] data = new byte[2]; data[0] = 65; data[1] = 66;
+
+					Packet sendPacket = new Packet(getSocket());
+					sendPacket.setType(1).setData(data).doSend();
+
 					Packet cp = new Packet(getSocket());
-					getSocket().Write(data,0,7);
+
 					string s = cp.getMessage();
 					System.Console.WriteLine("Message : " + s);
 				} catch(Exception e) {
