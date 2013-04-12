@@ -12,7 +12,12 @@ namespace MMIKinect {
 		/// <summary>
 		/// Constante définissant la taille du header du paquet
 		/// </summary>
-		private const uint _headerLength = 5;
+		private const uint _headerSize = 5;
+
+		/// <summary>
+		/// Variabe contenant la taille du corps du message
+		/// </summary>
+		uint _bodySize;
 
 		/// <summary>
 		/// Network Stream ouvert sur la socket
@@ -27,22 +32,16 @@ namespace MMIKinect {
 		/// <summary>
 		/// Type du paquet
 		/// </summary>
-		private char _type;
+		private byte _type;
 
 		/// <summary>
 		/// Constructeur de la classe Paquet
 		/// </summary>
 		/// <param name="stream">NetworkStream ouvert sur la socket de communication</param>
 		public Packet( NetworkStream stream ) {
+			_bodySize = 0;
 			_stream = stream;
-		}
-
-		/// <summary>
-		/// Renvoi la taille du header du paquet
-		/// </summary>
-		/// <returns>Taille du header du paquet</returns>
-		public uint getHeaderSize() {
-			return _headerLength;
+			_type = 0xFF;
 		}
 
 		/// <summary>
@@ -50,7 +49,17 @@ namespace MMIKinect {
 		/// </summary>
 		/// <returns>Taille des données du paquet</returns>
 		public uint getBodySize() {
-			return (uint)IPAddress.NetworkToHostOrder(BitConverter.ToInt32(getData(), 1));
+			if(_bodySize == 0) doReadHeader();
+			return _bodySize;
+		}
+
+		/// <summary>
+		/// Renvoi le type du paquet
+		/// </summary>
+		/// <returns>Taille des données du paquet</returns>
+		public byte getType() {
+			if(_type == 0xFF) doReadHeader();
+			return _type;
 		}
 
 		/// <summary>
@@ -58,28 +67,61 @@ namespace MMIKinect {
 		/// </summary>
 		/// <returns>Données du paquet : byte[]</returns>
 		public byte[] getData() {
-			if(_data == null) {
-				try {
-					_data = new byte[getHeaderSize()];
-					readBuffer(_data, 0, (int)getHeaderSize());
-					setBodySize();
-					if(getBodySize() != 0)
-						readBuffer(_data, (int)getHeaderSize(), (int)getBodySize());
-				} catch(Exception e) {
-					Console.WriteLine(e.Message);
-				}
-			}
+			if(_data == null) doReadData();
 			return _data;
 		}
 
 		/// <summary>
-		/// Redéfini la taille de byte[] _data en fonction de la taille reçue du paquet
+		/// Permet de définir le type du paquet
 		/// </summary>
-		private void setBodySize() {
-			byte[] tmp = new byte[_data.Length];
-			_data.CopyTo(tmp, 0);
-			_data = new byte[getHeaderSize() + getBodySize()];
-			tmp.CopyTo(_data, 0);
+		/// <param name="type">byte type défini le type du paquet</param>
+		/// <returns>L'objet Paquet courant</returns>
+		Packet setType( byte type ) {
+			_type = type;
+			return this;
+		}
+
+		/// <summary>
+		/// Permet de définir la taille des données du paquet
+		/// </summary>
+		/// <param name="size">Taille des données du paquet</param>
+		/// <returns>L'objet Paquet courant</returns>
+		Packet setBodySize( uint size ) {
+			_bodySize = size;
+			return this;
+		}
+
+		/// <summary>
+		/// Permet de définir les données du paquet
+		/// </summary>
+		/// <param name="data">Les données du paquet</param>
+		/// <returns>L'objet Paquet courant</returns>
+		Packet setData( byte[] data ) {
+			_data = data;
+			setBodySize((uint)_data.Length);
+			return this;
+		}
+
+		/// <summary>
+		/// Lis le header et rempli les données membres associés
+		/// </summary>
+		/// <returns>Le Packet courant</returns>
+		private Packet doReadHeader() {
+			byte[] buffer = new byte[_headerSize];
+			doReadStream(buffer, 0, _headerSize);
+			setType(buffer[0]);
+			setBodySize((uint)IPAddress.NetworkToHostOrder(BitConverter.ToInt32(buffer, 1)));
+			return this;
+		}
+
+		/// <summary>
+		/// Lis et rempli les données
+		/// </summary>
+		/// <returns>Le Packet courant</returns>
+		private Packet doReadData() {
+			_data = new byte[getBodySize()];
+			doReadStream(_data, 0, getBodySize());
+			return this;
 		}
 
 		/// <summary>
@@ -88,19 +130,20 @@ namespace MMIKinect {
 		/// <param name="buffer">Tableau de byte à remplir</param>
 		/// <param name="start">Début du remplissage</param>
 		/// <param name="length">Taille du remplissage</param>
-		private void readBuffer( byte[] buffer, int start, int length ) {
+		private Packet doReadStream( byte[] buffer, uint start, uint length ) {
 			int n = 0, r;
 
 			if(!_stream.CanRead)
 				throw new Exception("The stream cannot read");
 
 			while(n < length) {
-				r = _stream.Read(buffer, start + n, length - n);
+				r = _stream.Read(buffer,(int)(start + n),(int)(length - n));
 				if(r == 0)
 					throw new Exception("Connection lost");
 
 				n += r;
 			}
+			return this;	
 		}
 
 		/// <summary>
@@ -108,7 +151,7 @@ namespace MMIKinect {
 		/// </summary>
 		/// <returns>Les données sous forme de string (UTF8)</returns>
 		public string getMessage() {
-			return ByteArrayToStr(getData(), getHeaderSize(), getBodySize());
+			return ByteArrayToStr(getData(), _headerSize, (uint)getBodySize());
 		}
 
 		/// <summary>
