@@ -110,7 +110,7 @@ namespace MMIKinect {
 			byte[] buffer = new byte[_headerSize];
 			doReadStream(buffer, 0, _headerSize);
 			setType(buffer[0]);
-			setBodySize((uint)IPAddress.NetworkToHostOrder(BitConverter.ToInt32(buffer, 1)));
+			setBodySize((uint)BitConverter.ToInt32(buffer, 1));
 			return this;
 		}
 
@@ -147,12 +147,15 @@ namespace MMIKinect {
 		}
 
 		public Packet doSend() {
-			byte[] sendMessage = new byte[_headerSize + getBodySize()];
-			sendMessage[0] = getType();
-			byte[] bodySize = BitConverter.GetBytes(getBodySize());
-			bodySize.CopyTo(sendMessage,1);
-			getData().CopyTo(sendMessage,_headerSize);
-			_stream.Write(sendMessage, 0, sendMessage.Length);
+			if(_stream.CanWrite) {
+				byte[] sendMessage = new byte[_headerSize + getBodySize()];
+				sendMessage[0] = getType();
+				byte[] bodySize = BitConverter.GetBytes(getBodySize());
+				bodySize.CopyTo(sendMessage, 1);
+				getData().CopyTo(sendMessage, _headerSize);
+				Console.WriteLine("Envoi de paquet :" + getBodySize() + "octets.");
+				_stream.Write(sendMessage, 0, sendMessage.Length);
+			}
 			return this;
 		}
 
@@ -161,7 +164,7 @@ namespace MMIKinect {
 		/// </summary>
 		/// <returns>Les données sous forme de string (UTF8)</returns>
 		public string getMessage() {
-			return ByteArrayToStr(getData(), _headerSize, (uint)getBodySize());
+			return ByteArrayToStr(getData());
 		}
 
 		/// <summary>
@@ -183,6 +186,11 @@ namespace MMIKinect {
 		/// <returns>string (UTF8)</returns>
 		private static string ByteArrayToStr( byte[] bArr ) {
 			return ByteArrayToStr(bArr, 0, (uint)bArr.Length);
+		}
+
+		public static byte[] StrToByteArray( string str ) {
+			System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding();
+			return encoding.GetBytes(str);
 		}
 
 

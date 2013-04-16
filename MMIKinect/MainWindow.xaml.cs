@@ -124,6 +124,8 @@ namespace MMIKinect {
 						}
 					}
 
+					_clientTCP.doSendImage(_jpgImage);
+
 						
 				}
 			}
