@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MMIKinect.Audio {
+	enum Wave {
+		WAVE_PCM_FORMAT = 1,
+		WAVE_FIRST_BLOC_SIZE = 12,
+		WAVE_SECOND_BLOC_SIZE = 26,
+		WAVE_THIRD_BLOC_SIZE = 8,
+		WAVE_HEADER_SIZE = (WAVE_FIRST_BLOC_SIZE + WAVE_SECOND_BLOC_SIZE + WAVE_THIRD_BLOC_SIZE),
+
+		KINECT_FREQUENCY = 16000,
+		KINECT_CHANNELS = 1,
+		KINECT_BITS_PER_SAMPLE = 16,
+		KINECT_BYTES_PER_BLOC = (KINECT_CHANNELS * (KINECT_BITS_PER_SAMPLE / 8)),
+		KINECT_BYTES_PER_SEC = (KINECT_BYTES_PER_BLOC * KINECT_FREQUENCY),
+	}
+}
